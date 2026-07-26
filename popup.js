@@ -1,6 +1,8 @@
 const translations = {
   it: {
     headerTitle: "YouTube Audio Modifier",
+    autoMuteTitle: "Muto Auto Pubblicità",
+    autoMuteDesc: "Azzera l'audio durante gli ADS",
     logTitle: "Volume Logaritmico",
     logDesc: "Scala dB naturale attiva",
     badgeActive: "ATTIVO",
@@ -10,6 +12,8 @@ const translations = {
   },
   en: {
     headerTitle: "YouTube Audio Modifier",
+    autoMuteTitle: "Auto-Mute Ads",
+    autoMuteDesc: "Mutes audio during YouTube ads",
     logTitle: "Logarithmic Volume",
     logDesc: "Natural dB scale active",
     badgeActive: "ACTIVE",
@@ -19,6 +23,8 @@ const translations = {
   },
   fr: {
     headerTitle: "Modificateur Audio YouTube",
+    autoMuteTitle: "Muet Auto Pubs",
+    autoMuteDesc: "Coupe le son pendant les pubs",
     logTitle: "Volume Logarithmique",
     logDesc: "Échelle dB naturelle active",
     badgeActive: "ACTIF",
@@ -28,6 +34,8 @@ const translations = {
   },
   de: {
     headerTitle: "YouTube Audio-Modifikator",
+    autoMuteTitle: "Auto-Stumm Werbung",
+    autoMuteDesc: "Schaltet Werbung stumm",
     logTitle: "Logarithmische Lautstärke",
     logDesc: "Natürliche dB-Skala aktiv",
     badgeActive: "AKTIV",
@@ -37,6 +45,8 @@ const translations = {
   },
   ar: {
     headerTitle: "معدل صوت يوتيوب",
+    autoMuteTitle: "كتم الإعلانات التلقائي",
+    autoMuteDesc: "يكتم الصوت أثناء الإعلانات",
     logTitle: "الصوت اللوجاريتمي",
     logDesc: "مقياس ديسيبل طبيعي نشط",
     badgeActive: "نشط",
@@ -48,12 +58,15 @@ const translations = {
 
 document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("normalizationToggle");
+  const autoMuteToggle = document.getElementById("autoMuteAdsToggle");
   const slider = document.getElementById("thresholdSlider");
   const valueDisplay = document.getElementById("thresholdValue");
   const sliderSection = document.getElementById("sliderSection");
   const langSelect = document.getElementById("langSelect");
 
   const txtHeaderTitle = document.getElementById("txtHeaderTitle");
+  const txtAutoMuteTitle = document.getElementById("txtAutoMuteTitle");
+  const txtAutoMuteDesc = document.getElementById("txtAutoMuteDesc");
   const txtLogTitle = document.getElementById("txtLogTitle");
   const txtLogDesc = document.getElementById("txtLogDesc");
   const txtBadgeActive = document.getElementById("txtBadgeActive");
@@ -65,6 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const t = translations[lang] || translations.it;
     
     txtHeaderTitle.textContent = t.headerTitle;
+    txtAutoMuteTitle.textContent = t.autoMuteTitle;
+    txtAutoMuteDesc.textContent = t.autoMuteDesc;
     txtLogTitle.textContent = t.logTitle;
     txtLogDesc.textContent = t.logDesc;
     txtBadgeActive.textContent = t.badgeActive;
@@ -85,8 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Load saved state from chrome.storage.local
-  chrome.storage.local.get({ normalizationEnabled: true, normalizationThreshold: -20, selectedLang: "it" }, (res) => {
+  chrome.storage.local.get({ normalizationEnabled: true, normalizationThreshold: -20, autoMuteAdsEnabled: true, selectedLang: "it" }, (res) => {
     toggle.checked = res.normalizationEnabled;
+    autoMuteToggle.checked = res.autoMuteAdsEnabled;
     slider.value = res.normalizationThreshold;
     valueDisplay.textContent = `${res.normalizationThreshold} dB`;
     langSelect.value = res.selectedLang;
@@ -102,7 +118,13 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.local.set({ selectedLang });
   });
 
-  // Handle toggle change
+  // Handle auto-mute ads toggle change
+  autoMuteToggle.addEventListener("change", (e) => {
+    const enabled = e.target.checked;
+    chrome.storage.local.set({ autoMuteAdsEnabled: enabled });
+  });
+
+  // Handle attenuation toggle change
   toggle.addEventListener("change", (e) => {
     const enabled = e.target.checked;
     updateSliderVisibility(enabled);
