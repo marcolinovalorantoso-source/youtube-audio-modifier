@@ -1,0 +1,22 @@
+{
+   "action": {
+      "default_icon": "logo.png",
+      "default_popup": "popup.html"
+   },
+   "content_scripts": [ {
+      "js": [ "content2.js" ],
+      "matches": [ "https://www.youtube.com/*" ],
+	  "run_at": "document_end"
+   } ],
+   "description": "Modify YouTube's audio controls with a logarithmic volume scale.",
+   "host_permissions": [ "https://www.youtube.com/*" ],
+   "icons": {
+      "128": "logo.png",
+      "16": "logo.png",
+      "48": "logo.png"
+   },
+   "manifest_version": 3,
+   "name": "YouTube Audio Control Modifier",
+   "permissions": [ "scripting", "activeTab", "storage" ],
+   "version": "1.0"
+}

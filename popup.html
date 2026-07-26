@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Audio Modifier</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <span class="logo-icon">🔊</span>
+        <h2 id="txtHeaderTitle">YouTube Audio Modifier</h2>
+      </div>
+      <select id="langSelect" aria-label="Language">
+        <option value="it">IT</option>
+        <option value="en">EN</option>
+        <option value="fr">FR</option>
+        <option value="de">DE</option>
+        <option value="ar">AR</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="card-info">
+        <span class="card-title" id="txtLogTitle">Volume Logaritmico</span>
+        <span class="card-desc" id="txtLogDesc">Scala dB naturale attiva</span>
+      </div>
+      <div class="badge active" id="txtBadgeActive">ATTIVO</div>
+    </div>
+
+    <div class="card col">
+      <div class="card-header-row">
+        <div class="card-info">
+          <span class="card-title" id="txtAttenuatorTitle">Attenuatore Volume (dB)</span>
+          <span class="card-desc" id="txtAttenuatorDesc">Controlla il volume massimo</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="normalizationToggle" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <div class="slider-container" id="sliderSection">
+        <div class="slider-header">
+          <span class="slider-label" id="txtSliderLabel">Livello (0dB = Max | -50dB = Basso):</span>
+          <span class="slider-value" id="thresholdValue">-20 dB</span>
+        </div>
+        <input type="range" id="thresholdSlider" min="-50" max="0" step="1" value="-20">
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
