@@ -82,7 +82,13 @@ function processVideoVolume(video) {
         }
     }
 
-    // 2. Read YouTube's native player state (#movie_player)
+    // 2. IF EXTENSION MODIFIER IS DISABLED BY USER, RETURN IMMEDIATELY!
+    // Leave 100% control of video volume to native YouTube player!
+    if (!isNormalizationEnabled) {
+        return;
+    }
+
+    // 3. Read YouTube's native player state (#movie_player)
     const nativeState = getNativeYouTubeVolume();
 
     // Respect native mute button & 0 volume
@@ -92,7 +98,7 @@ function processVideoVolume(video) {
 
     const nativeVol = nativeState.volume; // 0.0 to 1.0 directly from YouTube's native slider
 
-    // 3. Calculate final target volume: nativeVol * logarithmic_curve * attenuationFactor
+    // 4. Calculate final target volume: nativeVol * logarithmic_curve * attenuationFactor
     const logVol = Math.pow(nativeVol, 2.0); // Logarithmic curve for native slider
     const attenuation = getAttenuationFactor(normalizationThreshold);
     const targetVol = Math.max(0, Math.min(1.0, logVol * attenuation));
