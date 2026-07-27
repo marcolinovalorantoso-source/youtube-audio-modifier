@@ -63,7 +63,7 @@ function processVideoVolume(video) {
         }
     }
 
-    // 2. If extension volume attenuator is disabled, restore base user volume if needed
+    // 2. If extension volume attenuator is disabled, restore base user volume
     if (!isNormalizationEnabled) {
         if (video.__userBaseVolume !== undefined && video.__extensionApplied) {
             delete video.__extensionApplied;
@@ -77,28 +77,37 @@ function processVideoVolume(video) {
     // 3. Respect user native mute
     if (video.muted) return;
 
-    // 4. Capture native volume change from YouTube slider
-    if (!video.__isInternalVolumeChange) {
-        video.__userBaseVolume = video.volume;
+    const currentDomVol = video.volume;
+
+    // Initialize base volume if not set
+    if (video.__userBaseVolume === undefined) {
+        video.__userBaseVolume = currentDomVol > 0 ? currentDomVol : 1.0;
     }
 
-    const baseVol = (video.__userBaseVolume !== undefined) ? video.__userBaseVolume : 1.0;
+    // 4. Mathematical check: Did user change YouTube's native slider?
+    // Compare current DOM volume with the last target volume set by extension.
+    // If it matches (within epsilon), it was set by extension -> DO NOT update base volume!
+    // If it does NOT match, the user dragged YouTube's native slider -> update base volume!
+    const lastTarget = video.__lastTargetVol;
+    const isTargetMatch = (lastTarget !== undefined) && (Math.abs(currentDomVol - lastTarget) < 0.001);
+
+    if (!isTargetMatch && currentDomVol > 0) {
+        video.__userBaseVolume = currentDomVol;
+    }
+
+    const baseVol = video.__userBaseVolume;
     if (baseVol === 0) return;
 
     // 5. Calculate final target volume: baseVol * attenuationFactor
     const attenuation = getAttenuationFactor(normalizationThreshold);
-    const targetVol = Math.max(0, Math.min(1.0, baseVol * attenuation));
+    const targetVol = Math.max(0.0001, Math.min(1.0, baseVol * attenuation));
 
-    video.__isInternalVolumeChange = true;
+    video.__lastTargetVol = targetVol;
     video.__extensionApplied = true;
     try {
         video.volume = targetVol;
     } catch (e) {
         console.error("[YT Audio Extension] Error applying volume:", e);
-    } finally {
-        setTimeout(() => {
-            video.__isInternalVolumeChange = false;
-        }, 50);
     }
 }
 
