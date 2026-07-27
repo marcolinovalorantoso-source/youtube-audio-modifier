@@ -45,30 +45,11 @@ function isAdPlaying() {
     return adElements !== null;
 }
 
-// Safely read YouTube's native player API state (#movie_player)
-function getNativeYouTubeVolume() {
-    try {
-        const player = document.getElementById("movie_player") || document.querySelector(".html5-video-player");
-        if (player) {
-            if (typeof player.isMuted === "function" && player.isMuted()) {
-                return { muted: true, volume: 0 };
-            }
-            if (typeof player.getVolume === "function") {
-                const vol = player.getVolume();
-                return { muted: vol === 0, volume: vol / 100.0 };
-            }
-        }
-    } catch (e) {}
-
-    return { muted: false, volume: 1.0 };
-}
-
 function processVideoVolume(video) {
     if (!video) return;
 
-    const adActive = isAdPlaying();
-
     // 1. Handle Auto-Mute Ads without overriding manual mutes
+    const adActive = isAdPlaying();
     if (isAutoMuteAdsEnabled) {
         if (adActive) {
             if (!video.muted) {
@@ -82,37 +63,64 @@ function processVideoVolume(video) {
         }
     }
 
-    // 2. IF EXTENSION MODIFIER IS DISABLED BY USER, RETURN IMMEDIATELY!
-    // Leave 100% control of video volume to native YouTube player!
+    // 2. If extension volume attenuator is disabled, restore base user volume if needed
     if (!isNormalizationEnabled) {
+        if (video.__userBaseVolume !== undefined && video.__extensionApplied) {
+            delete video.__extensionApplied;
+            try {
+                video.volume = video.__userBaseVolume;
+            } catch (e) {}
+        }
         return;
     }
 
-    // 3. Read YouTube's native player state (#movie_player)
-    const nativeState = getNativeYouTubeVolume();
+    // 3. Respect user native mute
+    if (video.muted) return;
 
-    // Respect native mute button & 0 volume
-    if (nativeState.muted || video.muted) {
-        return;
+    // 4. Capture native volume change from YouTube slider
+    if (!video.__isInternalVolumeChange) {
+        video.__userBaseVolume = video.volume;
     }
 
-    const nativeVol = nativeState.volume; // 0.0 to 1.0 directly from YouTube's native slider
+    const baseVol = (video.__userBaseVolume !== undefined) ? video.__userBaseVolume : 1.0;
+    if (baseVol === 0) return;
 
-    // 4. Calculate final target volume: nativeVol * logarithmic_curve * attenuationFactor
-    const logVol = Math.pow(nativeVol, 2.0); // Logarithmic curve for native slider
+    // 5. Calculate final target volume: baseVol * attenuationFactor
     const attenuation = getAttenuationFactor(normalizationThreshold);
-    const targetVol = Math.max(0, Math.min(1.0, logVol * attenuation));
+    const targetVol = Math.max(0, Math.min(1.0, baseVol * attenuation));
 
+    video.__isInternalVolumeChange = true;
+    video.__extensionApplied = true;
     try {
         video.volume = targetVol;
     } catch (e) {
         console.error("[YT Audio Extension] Error applying volume:", e);
+    } finally {
+        setTimeout(() => {
+            video.__isInternalVolumeChange = false;
+        }, 50);
     }
+}
+
+function attachVideoListeners(video) {
+    if (video.__listenersAttached) return;
+    video.__listenersAttached = true;
+
+    video.addEventListener("volumechange", () => {
+        processVideoVolume(video);
+    });
+
+    video.addEventListener("play", () => {
+        processVideoVolume(video);
+    });
+
+    processVideoVolume(video);
 }
 
 function applyToAllVideos() {
     const videos = document.querySelectorAll("video");
     videos.forEach(video => {
+        attachVideoListeners(video);
         processVideoVolume(video);
     });
 }
@@ -129,6 +137,3 @@ observer.observe(document.body, {
     childList: true,
     subtree: true
 });
-
-// Fast sync every 200ms
-setInterval(applyToAllVideos, 200);
